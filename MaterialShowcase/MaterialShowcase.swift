@@ -25,7 +25,7 @@ public class MaterialShowcase: UIView {
   // Other default properties
   let LABEL_DEFAULT_HEIGHT: CGFloat = 50
   let BACKGROUND_DEFAULT_COLOR = UIColor.fromHex(hexString: "#2196F3")
-  let TARGET_HOLDER_COLOR = UIColor.clear
+  let TARGET_HOLDER_COLOR = UIColor.white
   
   // MARK: Animation properties
   var ANI_COMEIN_DURATION: TimeInterval = 0.5 // second
