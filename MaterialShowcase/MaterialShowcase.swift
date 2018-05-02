@@ -50,34 +50,36 @@ public class MaterialShowcase: UIView {
   // MARK: Public Properties
   
   // Background
-  public var backgroundPromptColor: UIColor!
-  public var backgroundPromptColorAlpha: CGFloat!
+  @objc public var backgroundPromptColor: UIColor!
+  @objc public var backgroundPromptColorAlpha: CGFloat = 0.0
   // Tap zone settings
   // - false: recognize tap from all displayed showcase.
   // - true: recognize tap for targetView area only.
-  public var isTapRecognizerForTagretView: Bool = false
+  @objc public var isTapRecognizerForTagretView: Bool = false
   // Target
-  public var shouldSetTintColor: Bool = true
-  public var targetTintColor: UIColor!
-  public var targetHolderRadius: CGFloat!
-  public var targetHolderColor: UIColor!
+  @objc public var shouldSetTintColor: Bool = true
+  @objc public var targetTintColor: UIColor!
+  @objc public var targetHolderRadius: CGFloat = 0.0
+  @objc public var targetHolderColor: UIColor!
   // Text
-  public var primaryText: String!
-  public var secondaryText: String!
-  public var primaryTextColor: UIColor!
-  public var secondaryTextColor: UIColor!
-  public var primaryTextSize: CGFloat!
-  public var secondaryTextSize: CGFloat!
-  public var primaryTextFont: UIFont?
-  public var secondaryTextFont: UIFont?
+  @objc public var primaryText: String!
+  @objc public var secondaryText: String!
+  @objc public var primaryTextColor: UIColor!
+  @objc public var secondaryTextColor: UIColor!
+  @objc public var primaryTextSize: CGFloat = 0.0
+  @objc public var secondaryTextSize: CGFloat = 0.0
+  @objc public var primaryTextFont: UIFont?
+  @objc public var secondaryTextFont: UIFont?
+  @objc public var primaryTextAlignment: NSTextAlignment = .left
+  @objc public var secondaryTextAlignment: NSTextAlignment = .left
   // Animation
-  public var aniComeInDuration: TimeInterval!
-  public var aniGoOutDuration: TimeInterval!
-  public var aniRippleScale: CGFloat!
-  public var aniRippleColor: UIColor!
-  public var aniRippleAlpha: CGFloat!
+  @objc public var aniComeInDuration: TimeInterval = 0.0
+  @objc public var aniGoOutDuration: TimeInterval = 0.0
+  @objc public var aniRippleScale: CGFloat = 0.0
+  @objc public var aniRippleColor: UIColor!
+  @objc public var aniRippleAlpha: CGFloat = 0.0
   // Delegate
-  public weak var delegate: MaterialShowcaseDelegate?
+  @objc public weak var delegate: MaterialShowcaseDelegate?
   
   public init() {
     // Create frame
@@ -97,7 +99,7 @@ public class MaterialShowcase: UIView {
 extension MaterialShowcase {
   
   /// Sets a general UIView as target
-  public func setTargetView(view: UIView) {
+  @objc public func setTargetView(view: UIView) {
     targetView = view
     if let label = targetView as? UILabel {
       targetTintColor = label.textColor
@@ -113,14 +115,14 @@ extension MaterialShowcase {
   }
   
   /// Sets a UIBarButtonItem as target
-  public func setTargetView(barButtonItem: UIBarButtonItem) {
+  @objc public func setTargetView(barButtonItem: UIBarButtonItem) {
     if let view = (barButtonItem.value(forKey: "view") as? UIView)?.subviews.first {
       targetView = view
     }
   }
   
   /// Sets a UITabBar Item as target
-  public func setTargetView(tabBar: UITabBar, itemIndex: Int) {
+  @objc public func setTargetView(tabBar: UITabBar, itemIndex: Int) {
     let tabBarItems = orderedTabBarItemViews(of: tabBar)
     if itemIndex < tabBarItems.count {
       targetView = tabBarItems[itemIndex]
@@ -132,7 +134,7 @@ extension MaterialShowcase {
   }
   
   /// Sets a UITableViewCell as target
-  public func setTargetView(tableView: UITableView, section: Int, row: Int) {
+  @objc public func setTargetView(tableView: UITableView, section: Int, row: Int) {
     let indexPath = IndexPath(row: row, section: section)
     targetView = tableView.cellForRow(at: indexPath)?.contentView
     // for table viewcell, we do not need target holder (circle view)
@@ -141,7 +143,7 @@ extension MaterialShowcase {
   }
   
   /// Shows it over current screen after completing setup process
-  public func show(animated: Bool = true, completion handler: (()-> Void)?) {
+  @objc public func show(animated: Bool = true, completion handler: (()-> Void)?) {
     initViews()
     alpha = 0.0
     containerView.addSubview(self)
@@ -240,19 +242,32 @@ extension MaterialShowcase {
   }
   
   func initViews() {
-    let center = calculateCenter(at: targetView, to: containerView)
+	
+	let center = calculateCenter(at: targetView, to: containerView)
     
     addTargetRipple(at: center)
     addTargetHolder(at: center)
-    addTarget(at: center)
+	
+	// if color is not clear, then add the target snapshot
+	if targetHolderColor != .clear {
+		addTarget(at: center)
+	}
+	
+    //In iPad version InstructionView was add to backgroundView
+    if UIDevice.current.userInterfaceIdiom == .pad {
+        addBackground()
+    }
+    
     addInstructionView(at: center)
     instructionView.layoutIfNeeded()
-    addBackground()
 
-    // Disable subview interaction to let users click to general view only
-    for subView in subviews {
-      subView.isUserInteractionEnabled = false
+    //In iPhone version InstructionView was add to self view
+    if UIDevice.current.userInterfaceIdiom != .pad {
+        addBackground()
     }
+    
+    // Disable subview interaction to let users click to general view only
+    subviews.forEach({$0.isUserInteractionEnabled = false})
     
     if isTapRecognizerForTagretView {
         //Add gesture recognizer for targetCopyView
@@ -265,24 +280,39 @@ extension MaterialShowcase {
   }
   
   /// Add background which is a big circle
-  private func addBackground() {
-    let radius: CGFloat!
-    
-    let center = getOuterCircleCenterPoint(for: targetCopyView)
-    
-    if UIDevice.current.userInterfaceIdiom == .pad {
-      radius = 300.0
-    } else {
-      radius = getOuterCircleRadius(center: center, textBounds: instructionView.frame, targetBounds: targetCopyView.frame)
-    }
-    
-    backgroundView = UIView(frame: CGRect(x: 0, y: 0, width: radius * 2,height: radius * 2))
-    backgroundView.center = center
-    backgroundView.backgroundColor = backgroundPromptColor.withAlphaComponent(backgroundPromptColorAlpha)
-    backgroundView.asCircle()
-    insertSubview(backgroundView, belowSubview: targetRippleView)
-  }
-  
+	private func addBackground() {
+		let radius: CGFloat!
+		
+		let center = targetView.center//getOuterCircleCenterPoint(for: targetCopyView)
+		
+		if UIDevice.current.userInterfaceIdiom == .pad {
+		  radius = 300.0
+		} else {
+		  radius = getOuterCircleRadius(center: center, textBounds: instructionView.frame, targetBounds: targetView.frame)
+		}
+		
+		backgroundView = UIView(frame: CGRect(x: 0, y: 0, width: radius * 2,height: radius * 2))
+		backgroundView.center = center
+		backgroundView.backgroundColor = backgroundPromptColor.withAlphaComponent(backgroundPromptColorAlpha)
+		backgroundView.asCircle()
+		insertSubview(backgroundView, belowSubview: targetRippleView)
+		addBackgroundMask(with: targetHolderRadius, in: backgroundView)
+	}
+	
+	func addBackgroundMask(with radius: CGFloat, in view: UIView) {
+	
+		let center = CGPoint(x: view.bounds.center.x, y: view.bounds.center.y)
+		let mutablePath = CGMutablePath()
+		mutablePath.addRect(view.bounds)
+		mutablePath.addArc(center: center, radius: radius, startAngle: 0.0, endAngle: 2 * 3.14, clockwise: false)
+		
+		let mask = CAShapeLayer()
+		mask.path = mutablePath
+		mask.fillRule = kCAFillRuleEvenOdd
+		
+		view.layer.mask = mask
+	}
+	
   /// A background view which add ripple animation when showing target view
   private func addTargetRipple(at center: CGPoint) {
     targetRippleView = UIView(frame: CGRect(x: 0, y: 0, width: targetHolderRadius * 2,height: targetHolderRadius * 2))
@@ -349,34 +379,69 @@ extension MaterialShowcase {
   private func addInstructionView(at center: CGPoint) {
     instructionView = MaterialShowcaseInstructionView()
     
+    instructionView.primaryTextAlignment = primaryTextAlignment
     instructionView.primaryTextFont = primaryTextFont
     instructionView.primaryTextSize = primaryTextSize
     instructionView.primaryTextColor = primaryTextColor
     instructionView.primaryText = primaryText
     
+    instructionView.secondaryTextAlignment = secondaryTextAlignment
     instructionView.secondaryTextFont = secondaryTextFont
     instructionView.secondaryTextSize = secondaryTextSize
     instructionView.secondaryTextColor = secondaryTextColor
     instructionView.secondaryText = secondaryText
     
     // Calculate x position
-    let xPosition = LABEL_MARGIN
+    var xPosition = LABEL_MARGIN
     
     // Calculate y position
     var yPosition: CGFloat!
     
-    if getTargetPosition(target: targetView, container: containerView) == .above {
-      yPosition = center.y + TEXT_CENTER_OFFSET
+    // Calculate instructionView width
+    var width : CGFloat
+    
+    if UIDevice.current.userInterfaceIdiom == .pad {
+        width = backgroundView.frame.width - xPosition
+        
+        if backgroundView.frame.origin.x < 0 {
+            xPosition = abs(backgroundView.frame.origin.x) + xPosition
+        } else if (backgroundView.frame.origin.x + backgroundView.frame.size.width >
+            UIScreen.main.bounds.width) {
+            width = backgroundView.frame.size.width - (xPosition*2)
+        }
+        if xPosition + width > backgroundView.frame.size.width {
+            width = width - CGFloat(xPosition/2)
+        }
+        
+        if getTargetPosition(target: targetView, container: containerView) == .above {
+            yPosition = (backgroundView.frame.size.height/2) + TEXT_CENTER_OFFSET
+        } else {
+            yPosition = TEXT_CENTER_OFFSET + LABEL_DEFAULT_HEIGHT * 2
+        }
     } else {
-      yPosition = center.y - TEXT_CENTER_OFFSET - LABEL_DEFAULT_HEIGHT * 2
+        if getTargetPosition(target: targetView, container: containerView) == .above {
+            
+             yPosition = center.y + TARGET_PADDING +  (targetView.bounds.height / 2 > self.targetHolderRadius ? targetView.bounds.height / 2 : self.targetHolderRadius)
+            
+        } else {
+            yPosition = center.y - TEXT_CENTER_OFFSET - LABEL_DEFAULT_HEIGHT * 2
+        }
+        
+        width = containerView.frame.width - (xPosition + xPosition)
     }
     
     instructionView.frame = CGRect(x: xPosition,
                                 y: yPosition,
-                                width: containerView.frame.width - (xPosition + xPosition),
+                                width: width ,
                                 height: 0)
-    addSubview(instructionView)
-  }
+    if UIDevice.current.userInterfaceIdiom == .pad {
+        backgroundView.addSubview(instructionView)
+    } else {
+        addSubview(instructionView)
+	}
+	}
+	
+
   
   /// Handles user's tap
   private func tapGestureRecoganizer() -> UIGestureRecognizer {
@@ -425,9 +490,7 @@ extension MaterialShowcase {
   }
   
   private func recycleSubviews() {
-    for subview in subviews {
-      subview.removeFromSuperview()
-    }
+    subviews.forEach({$0.removeFromSuperview()})
   }
 }
 
@@ -463,5 +526,3 @@ extension MaterialShowcase {
     return interactionViews.sorted(by: {$0.frame.minX < $1.frame.minX})
   }
 }
-
-
